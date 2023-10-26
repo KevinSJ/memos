@@ -23,7 +23,6 @@ import (
 	"github.com/usememos/memos/server/integration"
 	"github.com/usememos/memos/server/profile"
 	"github.com/usememos/memos/server/service/backup"
-	"github.com/usememos/memos/server/service/metric"
 	"github.com/usememos/memos/store"
 )
 
@@ -133,7 +132,6 @@ func (s *Server) Start(ctx context.Context) error {
 		}
 	}()
 
-	metric.Enqueue("server start")
 	return s.e.Start(fmt.Sprintf("%s:%d", s.Profile.Addr, s.Profile.Port))
 }
 
