@@ -71,18 +71,22 @@ fast on any inconsistency:
 ## Schema resolution
 
 MCP tool schemas must be self-contained JSON Schema, but the OpenAPI components
-use `$ref`. `openapi.go` resolves these into local definitions:
+use `$ref`. `openapi.go` inlines ALL of these refs so MCP consumers never have
+to resolve a pointer themselves:
 
-- **Top-level inlining.** The request-body and 200-response schemas for an
-  operation are resolved with `inlineRef = true`, so the outermost `$ref` is
-  expanded in place (`resolveSchemaRef` → `resolveSchemaValue` → `resolveSchemaMap`).
-- **Nested refs become `$defs`.** Any `$ref` encountered below the top level is
-  rewritten to a local `#/$defs/<Name>` pointer, and the referenced component is
-  collected into a `$defs` map (`addSchemaDef`).
-- **Cycle safety.** Recursive component schemas are handled by seeding
-  `defs[name]` with a placeholder and tracking `resolving[name]` before
-  recursing, so a schema that references itself terminates
-  (`addSchemaDef`).
+- **Full inlining.** The request-body and 200-response schemas for an operation
+  are resolved with `resolveSchemaRef` → `inlineSchemaValue` →
+  `inlineSchemaMap` → `inlineComponentSchema`, which expands every
+  `#/components/schemas/<Name>` pointer recursively in place. The resulting
+  schemas carry no `$ref` and no `$defs`.
+- **Cycle safety.** The `resolving` set tracks the inlining stack, so a circular
+  component schema fails fast with a `circular schema ref` error instead of
+  recursing forever (the current spec has no cycles).
+- **Defensive output inlining.** `catalog.go` still runs every tool schema
+  through `inlineLocalRefs`, which expands any remaining local `#/$defs/<Name>`
+  pointers using the schema's own `$defs` table and drops `$defs`, guaranteeing
+  the `outputSchema` (and `inputSchema`) handed to MCP consumers is fully
+  self-contained.
 
 `catalog.go` then assembles the per-tool input schema in
 `inputSchemaForOperation`:

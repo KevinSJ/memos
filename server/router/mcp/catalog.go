@@ -231,7 +231,9 @@ func inputSchemaForOperation(operation *openAPIOperation) jsonSchema {
 	if len(defs) > 0 {
 		schema["$defs"] = defs
 	}
-	return schema
+	// Fully inline any $defs pointers so MCP consumers receive a
+	// self-contained schema with no $ref left to resolve.
+	return inlineLocalRefs(schema)
 }
 
 func requestBodySchema(operation *openAPIOperation) jsonSchema {
@@ -268,15 +270,20 @@ func outputSchemaForOperation(operation *openAPIOperation) jsonSchema {
 	if operation.ResponseSchema == nil {
 		return okSchema()
 	}
-	return cloneSchema(operation.ResponseSchema)
+	// Inline ALL refs so the schema handed to MCP consumers is fully
+	// self-contained: nested component schemas are already expanded by the
+	// OpenAPI resolver, and inlineLocalRefs expands any remaining local
+	// $defs pointers and drops $defs.
+	return inlineLocalRefs(cloneSchema(operation.ResponseSchema))
 }
 
 func cloneSchema(schema jsonSchema) jsonSchema {
-	clone := jsonSchema{}
-	for key, value := range schema {
-		clone[key] = value
+	// Deep-copy so per-tool overrides never alias the shared registry maps.
+	cloned, ok := sanitizeSchemaValue(map[string]any(schema)).(map[string]any)
+	if !ok || cloned == nil {
+		return jsonSchema{}
 	}
-	return clone
+	return jsonSchema(cloned)
 }
 
 func extractSchemaDefs(schema jsonSchema) map[string]any {

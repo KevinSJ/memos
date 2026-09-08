@@ -349,9 +349,15 @@ func TestBuildCuratedToolsHasUniqueNames(t *testing.T) {
 		inputBytes, err := json.Marshal(tool.InputSchema)
 		require.NoError(t, err)
 		require.NotContains(t, string(inputBytes), "#/components/schemas")
+		require.NotContains(t, string(inputBytes), "#/$defs/")
 		outputBytes, err := json.Marshal(tool.OutputSchema)
 		require.NoError(t, err)
 		require.NotContains(t, string(outputBytes), "#/components/schemas")
+		// Output schemas handed to MCP consumers must be fully self-contained:
+		// ALL refs are inlined, so no $ref/$defs pointers remain.
+		require.NotContains(t, string(outputBytes), "#/$defs/")
+		require.NotContains(t, string(outputBytes), `"$ref"`)
+		require.NotContains(t, string(outputBytes), `"$defs"`)
 	}
 }
 

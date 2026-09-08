@@ -84,7 +84,7 @@ func TestResolveSchemaRef(t *testing.T) {
 	require.Contains(t, schema["properties"], "memos")
 }
 
-func TestResolveSchemaRefRewritesNestedComponentRefs(t *testing.T) {
+func TestResolveSchemaRefInlinesNestedComponentRefs(t *testing.T) {
 	spec := &openAPISpec{
 		Components: openAPIComponents{
 			Schemas: map[string]jsonSchema{
@@ -118,9 +118,16 @@ func TestResolveSchemaRefRewritesNestedComponentRefs(t *testing.T) {
 
 	data, err := json.Marshal(schema)
 	require.NoError(t, err)
+	// ALL refs are inlined for MCP consumers: no component pointers and no
+	// local $defs pointers remain.
 	require.NotContains(t, string(data), "#/components/schemas")
-	require.Contains(t, string(data), `"#/$defs/Memo"`)
-	require.Contains(t, string(data), `"#/$defs/Attachment"`)
+	require.NotContains(t, string(data), "#/$defs/")
+	require.NotContains(t, string(data), "$ref")
+	require.NotContains(t, string(data), "$defs")
+	// The nested Memo and Attachment schemas are expanded in place.
+	require.Contains(t, string(data), `"memos"`)
+	require.Contains(t, string(data), `"attachments"`)
+	require.Contains(t, string(data), `"filename"`)
 }
 
 func TestBuildOperationRegistryResolvesRequestBodySchema(t *testing.T) {
