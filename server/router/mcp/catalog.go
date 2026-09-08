@@ -197,7 +197,6 @@ func titleFromToolName(name string) string {
 func inputSchemaForOperation(operation *openAPIOperation) jsonSchema {
 	properties := map[string]any{}
 	required := []string{}
-	defs := map[string]any{}
 	for _, parameter := range operation.Parameters {
 		schema := jsonSchema(sanitizeSchemaValue(parameter.Schema).(map[string]any))
 		if parameter.Description != "" {
@@ -211,9 +210,6 @@ func inputSchemaForOperation(operation *openAPIOperation) jsonSchema {
 
 	if operation.RequestBody != nil {
 		bodySchema := requestBodySchema(operation)
-		for name, definition := range extractSchemaDefs(bodySchema) {
-			defs[name] = definition
-		}
 		properties["body"] = bodySchema
 		if operation.RequestBody.Required {
 			required = append(required, "body")
@@ -227,9 +223,6 @@ func inputSchemaForOperation(operation *openAPIOperation) jsonSchema {
 	}
 	if len(required) > 0 {
 		schema["required"] = required
-	}
-	if len(defs) > 0 {
-		schema["$defs"] = defs
 	}
 	return schema
 }
@@ -279,14 +272,6 @@ func cloneSchema(schema jsonSchema) jsonSchema {
 	return clone
 }
 
-func extractSchemaDefs(schema jsonSchema) map[string]any {
-	defs, ok := schema["$defs"].(map[string]any)
-	if !ok {
-		return nil
-	}
-	delete(schema, "$defs")
-	return defs
-}
 
 // idempotentOperationIDs lists operations whose idempotency the HTTP-method
 // heuristic gets wrong. The "Set*" operations declaratively replace the full

@@ -80,9 +80,8 @@ func NewMCPService(profile *profile.Profile, echoServer *echo.Echo) (*MCPService
 	}, &sdkmcp.StreamableHTTPOptions{
 		// Stateless is also what lets the SDK serve protocol version
 		// 2026-07-28; stateful handlers negotiate down to 2025-11-25.
-		Stateless:           true,
-		JSONResponse:        true,
-		MaxRequestBodyBytes: maxMCPRequestBytes,
+		Stateless:    true,
+		JSONResponse: true,
 		// memos is typically served behind a reverse proxy with the app bound to a
 		// loopback address while the public Host header is a real domain. The SDK's
 		// DNS-rebinding guard treats that shape as an attack and rejects every
@@ -106,11 +105,13 @@ func catalogCacheMiddleware(next sdkmcp.MethodHandler) sdkmcp.MethodHandler {
 		if err != nil {
 			return result, err
 		}
-		switch typed := result.(type) {
-		case *sdkmcp.ListToolsResult:
-			typed.TTLMs = int(toolCatalogTTL.Milliseconds())
-		case *sdkmcp.DiscoverResult:
-			typed.TTLMs = int(toolCatalogTTL.Milliseconds())
+		if result != nil {
+			meta := result.GetMeta()
+			if meta == nil {
+				meta = sdkmcp.Meta{}
+			}
+			meta["ttlMs"] = int(toolCatalogTTL.Milliseconds())
+			result.SetMeta(meta)
 		}
 		return result, nil
 	}

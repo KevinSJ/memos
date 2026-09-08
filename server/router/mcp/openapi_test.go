@@ -84,7 +84,7 @@ func TestResolveSchemaRef(t *testing.T) {
 	require.Contains(t, schema["properties"], "memos")
 }
 
-func TestResolveSchemaRefRewritesNestedComponentRefs(t *testing.T) {
+func TestResolveSchemaRefInlinesNestedComponentRefs(t *testing.T) {
 	spec := &openAPISpec{
 		Components: openAPIComponents{
 			Schemas: map[string]jsonSchema{
@@ -118,9 +118,9 @@ func TestResolveSchemaRefRewritesNestedComponentRefs(t *testing.T) {
 
 	data, err := json.Marshal(schema)
 	require.NoError(t, err)
-	require.NotContains(t, string(data), "#/components/schemas")
-	require.Contains(t, string(data), `"#/$defs/Memo"`)
-	require.Contains(t, string(data), `"#/$defs/Attachment"`)
+	require.NotContains(t, string(data), "$ref")
+	require.NotContains(t, string(data), "$defs")
+	require.Contains(t, string(data), `"name":{"type":"string"}`)
 }
 
 func TestBuildOperationRegistryResolvesRequestBodySchema(t *testing.T) {
