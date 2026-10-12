@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.31.1](https://github.com/KevinSJ/memos/compare/v0.31.0...v0.31.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* **ci:** pin mcp sdk ([da22579](https://github.com/KevinSJ/memos/commit/da2257926e2bcce021964b7bdc5e854292574e91))
+
 ## [0.31.0](https://github.com/KevinSJ/memos/compare/v0.30.0...v0.31.0) (2026-10-12)
 
 
